@@ -3,3 +3,7 @@ __pycache__/
 .venv/
 uv.lock
 *.egg-info/
+.coverage
+build/
+.ruff_cache/
+.pytest_cache/
