@@ -1,3 +1,4 @@
+from contextlib import suppress
 from datetime import datetime
 
 from celnav_core.config import NAVPAC_STAR_INDEX, PLANET_BODIES
@@ -20,10 +21,8 @@ def moon_alt_az(dt: datetime, pos: Position) -> tuple[float, float]:
 def visible_bodies(dt: datetime, pos: Position, min_alt: float = 10.0) -> list[str]:
     result = []
     for name in ["Sun", "Moon"] + list(PLANET_BODIES) + list(NAVPAC_STAR_INDEX):
-        try:
+        with suppress(Exception):
             alt, _ = body_alt_az(name, dt, pos)
             if alt > min_alt:
                 result.append(name)
-        except Exception:
-            pass
     return result
