@@ -27,9 +27,22 @@ line-length = 120
 select = ["E", "W", "F", "I", "N", "UP", "S", "B", "SIM", "PL"]
 ignore = ["SIM117", "PLR0913", "S311", "S110", "PLW0603", "E501"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR2004", "F401", "I001"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.coverage.report]
 show_missing = true
+fail_under = 90
+
+[tool.coverage.run]
+source = ["celnav_core"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+]
