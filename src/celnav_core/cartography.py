@@ -52,9 +52,9 @@ def _plot_lop(ax, red, color, half: float):
     ax.text(mx + lw, my + lw, body_label(red.body_name), color=color, fontweight="bold", fontsize=9)
 
 
-def _plot_compass(ax, scenario: Scenario, half: float, colors, cx_shift: float = 0, cy_shift: float = 0):
-    cx = half * 0.7 + cx_shift
-    cy = half * 0.7 + cy_shift
+def _plot_compass(ax, scenario: Scenario, half: float, colors, center: tuple[float, float] = (0, 0)):
+    cx = half * 0.7 + center[0]
+    cy = half * 0.7 + center[1]
     cr = half * 0.15
     ax.add_patch(plt.Circle((cx, cy), cr, fill=False, color="gray", linewidth=1))
     for angle_deg, label in [(0, "N"), (90, "E"), (_HALF_CIRCLE, "S"), (270, "W")]:
@@ -125,7 +125,7 @@ def plot_chart(scenario: Scenario, zoom: float = 1.5) -> plt.Figure:
         ax.plot(fx, fy, marker="D", color="red", markersize=10, zorder=5)
         ax.text(fx + off, fy + off, "Fix", color="red", fontweight="bold", fontsize=10)
 
-    _plot_compass(ax, scenario, half, colors, cx, cy)
+    _plot_compass(ax, scenario, half, colors, (cx, cy))
     if any(r.selected for r in scenario.sight_reductions):
         ax.legend(loc="lower right", fontsize=9)
     plt.tight_layout()
