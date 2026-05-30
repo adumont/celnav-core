@@ -43,11 +43,14 @@ def round_to_arcsec(deg: float) -> float:
     return (1 if deg >= 0 else -1) * (d + m / 60 + s / 3600)
 
 
+_DDMMSS_THRESHOLD = 100.0
+
+
 def parse_angle(value: float) -> float:
     v = abs(value)
     d = int(v // 10000)
     rest = v - d * 10000
-    if rest > 100.0:
+    if rest > _DDMMSS_THRESHOLD:
         return ddmmss_to_deg(value)
     else:
         return ddmmmm_to_deg(value)
