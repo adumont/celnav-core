@@ -10,6 +10,7 @@ from celnav_core.core.reduction import (
 )
 from celnav_core.core.sight import compute_ho, dip_correction, semidiameter_deg
 from celnav_core.models import Fix, Position, Scenario, SextantReading, SightReduction
+from celnav_core.core.reduction import haversine_distance, solve_fix_from_intercepts
 from celnav_core.utils.angles import (
     body_label,
     ddmmmm_to_deg,
@@ -18,7 +19,9 @@ from celnav_core.utils.angles import (
     deg_to_ddmmss,
     format_angle,
     format_azimuth,
+    format_navpac_dmmss,
     format_position,
+    parse_dms_string,
     round_to_arcsec,
 )
 
@@ -39,7 +42,11 @@ __all__ = [
     "round_to_arcsec",
     "format_angle",
     "format_azimuth",
+    "format_navpac_dmmss",
     "format_position",
+    "haversine_distance",
+    "parse_dms_string",
+    "solve_fix_from_intercepts",
     "body_label",
     "body_alt_az",
     "visible_bodies",

@@ -25,12 +25,19 @@ class TestPosition:
 class TestSextantReading:
     def test_create(self):
         dt = datetime(2026, 6, 21, 12, 0, 0, tzinfo=UTC)
-        r = SextantReading(body_name="Sun", hs=48.1, ho=45.0, utc=dt, real_altitude=48.0, correction_total=-3.0)
+        r = SextantReading(
+            body_name="Sun", hs=48.1, ho=45.0, utc=dt, real_altitude=48.0, azimuth=180.0,
+            correction_total=-3.0, dip_arcmin=5.0, refraction_arcmin=0.5, semidiameter_arcmin=16.0,
+        )
         assert r.body_name == "Sun"
         assert r.hs == 48.1
         assert r.ho == 45.0
         assert r.real_altitude == 48.0
+        assert r.azimuth == 180.0
         assert r.correction_total == -3.0
+        assert r.dip_arcmin == 5.0
+        assert r.refraction_arcmin == 0.5
+        assert r.semidiameter_arcmin == 16.0
 
 
 class TestSightReduction:
@@ -96,7 +103,10 @@ class TestScenario:
         real = Position(lat=35.0, lon=-40.0)
         est = Position(lat=35.1, lon=-39.9)
         dt = datetime(2026, 6, 21, 12, 0, 0, tzinfo=UTC)
-        reading = SextantReading(body_name="Sun", hs=48.1, ho=45.0, utc=dt, real_altitude=48.0, correction_total=-3.0)
+        reading = SextantReading(
+            body_name="Sun", hs=48.1, ho=45.0, utc=dt, real_altitude=48.0, azimuth=180.0,
+            correction_total=-3.0, dip_arcmin=5.0, refraction_arcmin=0.5, semidiameter_arcmin=16.0,
+        )
         reduction = SightReduction(
             body_name="Sun",
             hs=0.0,

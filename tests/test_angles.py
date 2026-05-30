@@ -1,18 +1,21 @@
 import math
 import pytest
+import re
 from celnav_core.utils.angles import (
     _abs_deg_min,
-    deg_to_ddmmss,
-    deg_to_ddmmmm,
-    ddmmss_to_deg,
+    body_label,
     ddmmmm_to_deg,
+    ddmmss_to_deg,
+    deg_to_ddmmmm,
+    deg_to_ddmmss,
     format_angle,
     format_azimuth,
     format_ddmmmm,
     format_ddmmss,
+    format_navpac_dmmss,
     format_position,
     parse_angle,
-    body_label,
+    parse_dms_string,
 )
 
 
@@ -158,3 +161,91 @@ class TestBodyLabel:
 
     def test_unknown(self):
         assert body_label("Foobar") == "Foobar"
+
+
+class TestFormatNavpacDmmss:
+    def test_positive(self):
+        result = format_navpac_dmmss(45.5)
+        assert result == "45.3000"
+
+    def test_negative(self):
+        result = format_navpac_dmmss(-45.5)
+        assert result == "-45.3000"
+
+    def test_zero(self):
+        result = format_navpac_dmmss(0.0)
+        assert result == "0.0000"
+
+    def test_with_seconds(self):
+        result = format_navpac_dmmss(10.25)
+        assert result == "10.1500"
+
+    def test_rounding(self):
+        result = format_navpac_dmmss(35.75)
+        assert result == "35.4500"
+
+
+class TestParseDmsString:
+    def test_basic_dms(self):
+        result = parse_dms_string("45°30'00\"")
+        assert result == pytest.approx(45.5, abs=1e-4)
+
+    def test_with_spaces(self):
+        result = parse_dms_string("45 30 00")
+        assert result == pytest.approx(45.5, abs=1e-4)
+
+    def test_with_south(self):
+        result = parse_dms_string("45°30'00\" S")
+        assert result == pytest.approx(-45.5, abs=1e-4)
+
+    def test_with_west(self):
+        result = parse_dms_string("45°30'00\" W")
+        assert result == pytest.approx(-45.5, abs=1e-4)
+
+    def test_with_north(self):
+        result = parse_dms_string("45°30'00\" N")
+        assert result > 0
+
+    def test_with_east(self):
+        result = parse_dms_string("45°30'00\" E")
+        assert result > 0
+
+    def test_degrees_only(self):
+        result = parse_dms_string("45°")
+        assert result == pytest.approx(45.0, abs=1e-4)
+
+    def test_deg_and_min(self):
+        result = parse_dms_string("45°30'")
+        assert result == pytest.approx(45.5, abs=1e-4)
+
+    def test_colon_separator(self):
+        result = parse_dms_string("45:30:00")
+        assert result == pytest.approx(45.5, abs=1e-4)
+
+    def test_semicolon_separator(self):
+        result = parse_dms_string("45;30;00")
+        assert result == pytest.approx(45.5, abs=1e-4)
+
+    def test_negative_sign(self):
+        result = parse_dms_string("-45 30 00")
+        assert result == pytest.approx(-45.5, abs=1e-4)
+
+    def test_alt_degree_symbol(self):
+        result = parse_dms_string("45º30'00\"")
+        assert result == pytest.approx(45.5, abs=1e-4)
+
+    def test_empty_string_raises(self):
+        with pytest.raises(ValueError):
+            parse_dms_string("")
+
+    def test_whitespace_only_raises(self):
+        with pytest.raises(ValueError):
+            parse_dms_string("   ")  # fmt: skip
+
+    def test_garbage_raises(self):
+        with pytest.raises(ValueError):
+            parse_dms_string("abc")
+
+    def test_hemisphere_only_raises(self):
+        with pytest.raises(ValueError):
+            parse_dms_string("N")

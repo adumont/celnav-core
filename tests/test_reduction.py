@@ -4,7 +4,9 @@ from celnav_core.models import Position, Scenario, SightReduction, Fix
 from celnav_core.core.reduction import (
     _lop_condition_number,
     compute_fix_error,
+    haversine_distance,
     recompute_fix,
+    solve_fix_from_intercepts,
     solve_fix_least_squares,
     solve_fix_single,
     suggest_best_lops,
@@ -324,3 +326,76 @@ class TestSuggestBestLops:
         # Sun at index 0 + Moon at index 2 (Zn 0+90=90° apart) is best
         assert 0 in indices
         assert 2 in indices
+
+
+class TestHaversineDistance:
+    def test_zero(self):
+        pos = Position(lat=30.0, lon=-40.0)
+        assert haversine_distance(pos, pos) == pytest.approx(0.0, abs=1e-4)
+
+    def test_equator_degree(self):
+        p1 = Position(lat=0.0, lon=0.0)
+        p2 = Position(lat=0.0, lon=1.0)
+        assert haversine_distance(p1, p2) == pytest.approx(60.0, abs=0.1)
+
+    def test_meridian_degree(self):
+        p1 = Position(lat=0.0, lon=0.0)
+        p2 = Position(lat=1.0, lon=0.0)
+        assert haversine_distance(p1, p2) == pytest.approx(60.0, abs=0.1)
+
+    def test_45_parallel(self):
+        p1 = Position(lat=45.0, lon=0.0)
+        p2 = Position(lat=45.0, lon=1.0)
+        expected = 60.0 * math.cos(math.radians(45.0))
+        assert haversine_distance(p1, p2) == pytest.approx(expected, abs=0.1)
+
+    def test_symmetric(self):
+        p1 = Position(lat=30.0, lon=-40.0)
+        p2 = Position(lat=35.0, lon=-50.0)
+        assert haversine_distance(p1, p2) == pytest.approx(haversine_distance(p2, p1), abs=1e-4)
+
+    def test_known_value(self):
+        p1 = Position(lat=36.5, lon=-6.3)
+        p2 = Position(lat=28.5, lon=-16.3)
+        d = haversine_distance(p1, p2)
+        assert d == pytest.approx(697.0, abs=5.0)  # ~697 nmi Cadiz to Tenerife
+
+
+class TestSolveFixFromIntercepts:
+    def test_two_perpendicular(self):
+        dr = Position(lat=0.0, lon=0.0)
+        intercepts = [(10.0, 0.0), (10.0, 90.0)]
+        fix = solve_fix_from_intercepts(intercepts, dr)
+        assert fix.lat == pytest.approx(10.0 / 60.0, abs=1e-4)
+        assert fix.lon == pytest.approx(10.0 / 60.0, abs=1e-4)
+        assert fix.iterations == 1
+
+    def test_single_returns_dr(self):
+        dr = Position(lat=30.0, lon=-40.0)
+        fix = solve_fix_from_intercepts([(10.0, 0.0)], dr)
+        assert fix.lat == 30.0
+        assert fix.lon == -40.0
+        assert fix.iterations == 0
+
+    def test_empty_returns_dr(self):
+        dr = Position(lat=30.0, lon=-40.0)
+        fix = solve_fix_from_intercepts([], dr)
+        assert fix.lat == 30.0
+        assert fix.lon == -40.0
+        assert fix.iterations == 0
+
+    def test_three_intercepts(self):
+        dr = Position(lat=30.0, lon=-40.0)
+        intercepts = [(10.0, 0.0), (10.0, 120.0), (10.0, 240.0)]
+        fix = solve_fix_from_intercepts(intercepts, dr)
+        assert isinstance(fix.lat, float)
+        assert isinstance(fix.lon, float)
+        assert fix.iterations == 1
+
+    def test_anti_parallel(self):
+        dr = Position(lat=0.0, lon=0.0)
+        intercepts = [(10.0, 0.0), (10.0, 180.0)]
+        fix = solve_fix_from_intercepts(intercepts, dr)
+        # North 10 nmi, South 10 nmi — latitude cancels, longitude untouched
+        assert fix.lat == pytest.approx(0.0, abs=0.001)
+        assert fix.lon == pytest.approx(0.0, abs=0.001)

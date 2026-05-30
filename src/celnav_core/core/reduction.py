@@ -117,12 +117,43 @@ def suggest_best_lops(reductions: list[SightReduction]) -> dict[int, tuple[list[
     return result
 
 
-def compute_fix_error(fix: Fix, real_pos: Position) -> Fix:
-    dlat = math.radians(fix.lat - real_pos.lat)
-    dlon = math.radians(fix.lon - real_pos.lon)
+def haversine_distance(p1: Position, p2: Position) -> float:
+    dlat = math.radians(p1.lat - p2.lat)
+    dlon = math.radians(p1.lon - p2.lon)
     a = (
         math.sin(dlat / 2) ** 2
-        + math.cos(math.radians(real_pos.lat)) * math.cos(math.radians(fix.lat)) * math.sin(dlon / 2) ** 2
+        + math.cos(math.radians(p2.lat))
+        * math.cos(math.radians(p1.lat))
+        * math.sin(dlon / 2) ** 2
     )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return Fix(lat=fix.lat, lon=fix.lon, error_nmi=c * EARTH_RADIUS_NMI, iterations=fix.iterations)
+    return c * EARTH_RADIUS_NMI
+
+
+def solve_fix_from_intercepts(
+    intercepts: list[tuple[float, float]],
+    dr: Position,
+) -> Fix:
+    if len(intercepts) < 2:
+        return Fix(lat=dr.lat, lon=dr.lon, iterations=0)
+
+    mat = []
+    vec = []
+    for a, zn in intercepts:
+        az_r = math.radians(zn)
+        mat.append([math.cos(az_r), math.sin(az_r)])
+        vec.append(a)
+
+    mat_arr = np.array(mat, dtype=float)
+    vec_arr = np.array(vec, dtype=float)
+    x, _, _, _ = np.linalg.lstsq(mat_arr, vec_arr, rcond=None)
+
+    dlat_deg = float(x[0]) / 60.0
+    dlon_deg = float(x[1]) / (60.0 * math.cos(math.radians(dr.lat)))
+
+    return Fix(lat=dr.lat + dlat_deg, lon=dr.lon + dlon_deg, iterations=1)
+
+
+def compute_fix_error(fix: Fix, real_pos: Position) -> Fix:
+    error_nmi = haversine_distance(fix, real_pos)
+    return Fix(lat=fix.lat, lon=fix.lon, error_nmi=error_nmi, iterations=fix.iterations)

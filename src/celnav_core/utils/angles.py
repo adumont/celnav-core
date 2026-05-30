@@ -1,3 +1,5 @@
+import re
+
 from celnav_core.config import NAVPAC_STAR_INDEX, PLANET_BODIES
 
 
@@ -108,3 +110,32 @@ def format_position(lat: float, lon: float, fmt: str = "dms") -> str:
     lat_s = format_angle(lat, fmt)
     lon_s = format_angle(lon, fmt)
     return f"{lat_s} {ns}, {lon_s} {ew}"
+
+
+def format_navpac_dmmss(deg: float) -> str:
+    sign = "-" if deg < 0 else ""
+    packed = deg_to_ddmmss(abs(deg))
+    d = int(packed // 10000)
+    mmss = packed - d * 10000
+    return f"{sign}{d}.{mmss:04.0f}"
+
+
+def parse_dms_string(s: str) -> float:
+    if not s or not s.strip():
+        raise ValueError("Empty string")
+
+    s = s.strip().upper()
+
+    sign = -1 if "S" in s or "W" in s or s[0] == "-" else 1
+
+    s_clean = re.sub(r"[NSEW°º'\"˝-]", " ", s)
+    parts = [p for p in re.split(r"[\s:;,_]+", s_clean) if p]
+
+    if not parts:
+        raise ValueError(f"Could not parse: {s}")
+
+    deg = float(parts[0])
+    minutes = float(parts[1]) if len(parts) > 1 else 0.0
+    seconds = float(parts[2]) if len(parts) > 2 else 0.0
+
+    return sign * (deg + minutes / 60.0 + seconds / 3600.0)

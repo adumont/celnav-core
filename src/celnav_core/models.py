@@ -22,7 +22,11 @@ class SextantReading(BaseModel):
     ho: float
     utc: datetime
     real_altitude: float
+    azimuth: float
     correction_total: float
+    dip_arcmin: float
+    refraction_arcmin: float
+    semidiameter_arcmin: float
 
 
 class SightReduction(BaseModel):
