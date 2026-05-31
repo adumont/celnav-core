@@ -32,7 +32,7 @@ def compute_ho(
     dip = dip_correction(he_ft)
     sd = semidiameter_deg(body_name) if body_name in ("Sun", "Moon") else 0.0
     limb_sign = {"Lower": -1, "Upper": 1, "Center": 0}.get(limb, -1)
-    hs = apparent_alt + dip + limb_sign * sd
+    hs = apparent_alt - dip + limb_sign * sd
     ho = geometric_alt
     corr = dip + (geometric_alt - apparent_alt) + sd
     dip_arcmin = abs(dip) * 60.0
