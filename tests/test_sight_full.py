@@ -58,7 +58,7 @@ class TestComputeHo:
         lower = compute_ho("Sun", dt, pos, 10.0, limb="Lower")
         upper = compute_ho("Sun", dt, pos, 10.0, limb="Upper")
         sd = semidiameter_deg("Sun")
-        # Upper limb hs = apparent_alt + dip + sd, Lower = apparent_alt + dip - sd
+        # Upper limb hs = apparent_alt - dip + sd, Lower = apparent_alt - dip - sd
         # Difference in hs should be 2 * sd
         assert upper.hs - lower.hs == pytest.approx(2 * sd, abs=1e-4)
 
@@ -69,3 +69,29 @@ class TestComputeHo:
         lower = compute_ho("Sun", dt, pos, 10.0, limb="Lower")
         sd = semidiameter_deg("Sun")
         assert center.hs - lower.hs == pytest.approx(sd, abs=1e-4)
+
+    def test_hs_plus_corr_equals_ho(self):
+        pos = Position(lat=30.0, lon=-40.0)
+        dt = datetime(2026, 6, 21, 14, 0, 0, tzinfo=UTC)
+        reading = compute_ho("Sun", dt, pos, 10.0)
+        assert reading.hs + reading.correction_total == pytest.approx(reading.ho, abs=1e-10)
+
+    def test_sun_known_values(self):
+        pos = Position(lat=30.0, lon=-40.0)
+        dt = datetime(2026, 6, 21, 14, 0, 0, tzinfo=UTC)
+        r = compute_ho("Sun", dt, pos, 10.0)
+        assert r.hs == pytest.approx(78.381, abs=0.001)
+        assert r.ho == pytest.approx(78.593, abs=0.001)
+        assert r.azimuth == pytest.approx(122.636, abs=0.01)
+        assert r.dip_arcmin == pytest.approx(3.067, abs=0.01)
+        assert r.refraction_arcmin == pytest.approx(0.200, abs=0.01)
+        assert r.semidiameter_arcmin == pytest.approx(15.987, abs=0.01)
+        assert r.correction_total == pytest.approx(0.212, abs=0.01)
+
+    def test_higher_he_increases_hs(self):
+        pos = Position(lat=30.0, lon=-40.0)
+        dt = datetime(2026, 6, 21, 14, 0, 0, tzinfo=UTC)
+        r_low = compute_ho("Sun", dt, pos, 10.0)
+        r_high = compute_ho("Sun", dt, pos, 50.0)
+        assert r_high.dip_arcmin > r_low.dip_arcmin
+        assert r_high.hs > r_low.hs
